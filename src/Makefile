@@ -1,22 +1,18 @@
+# Objetivo predeterminado: compilar y ejecutar el programa
+all: juego_preguntas_debug.bin
 
-release: juego_preguntas
+# Compilar el programa final enlazando los archivos objeto de C y ASM
+juego_preguntas_debug.bin: main.o comparar_respuesta.o
+	gcc -g -o juego_preguntas_debug.bin main.o comparar_respuesta.o -no-pie
 
-# Compila el programa final enlazando los archivos objeto de C y ASM
-juego_preguntas: main.o comparar_respuesta.o
-	gcc -o juego_preguntas main.o comparar_respuesta.o -no-pie
-
-# Compila el archivo fuente de C en un archivo objeto
+# Compilar el archivo fuente de C en un archivo objeto
 main.o: main.c
 	gcc -c main.c -o main.o
 
-# Compila el archivo fuente de ASM en un archivo objeto
+# Compilar el archivo fuente de ASM en un archivo objeto
 comparar_respuesta.o: comparar_respuesta.asm
-	nasm -f elf64 comparar_respuesta.asm -o comparar_respuesta.o
+	nasm -f elf64 -o comparar_respuesta.o comparar_respuesta.asm
 
 # Limpiar los archivos compilados y el ejecutable
 clean:
-	rm -f *.o juego_preguntas
-
-#correr programa
-run:
-	./juego_preguntas
+	rm -f *.o juego_preguntas_debug.bin

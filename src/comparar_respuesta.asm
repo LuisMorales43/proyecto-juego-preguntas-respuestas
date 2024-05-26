@@ -1,72 +1,64 @@
-; no me gusta usar ensamblador realmente
-; pero para este programa tendra que ser necesario su uso
-; lo primero que tenemos que hacer es tomar las respuestas del usuario y las respuestas correctas
-; requerimos de 3 cosas:
-;   1) Un contador de aciertos que ira aumentando conforme vaya siendo igual la respuesta del usuario a la correcta
-;   2) Comparar 2 array, moviendose entre uno y otro para ir comparando las respuestas
-;           2.1) Al comparar dos array, si son iguales, el registro contador (rax) aumentara en 1
-;           2.2) Aqui se utilizaran mensajes, tanto el mensaje de "Aprobado" si el numero de respuestas es >= 3 y reprobado si es <= 2
-;           2.3) Una vez impresos los mensajes, deberia funcionar correctamente, eso espero.
+section .data
+    respuestas_usuario db 3, 1, 2, 3, 4   ; Array de respuestas del usuario
+    respuestas_correctas db 3, 2, 2, 3, 1 ; Array de respuestas correctas
 
+    msg_aprobado db "Aprobado. Aciertos = ", 0
+    msg_reprobado db "Reprobado. Aciertos = ", 0
+    msg_cero db "Wow. Creo que toca estudiar un poco, tuviste cero aciertos...", 0
 
+section .text
+    global comparar_respuesta_start  ; Cambiamos _start por comparar_respuesta_start
 
+comparar_respuesta_start:
+    mov rdi, respuestas_usuario
+    mov rsi, respuestas_correctas
+    mov rcx, 5         ; Número de preguntas
+    xor rax, rax       ; Contador de aciertos
 
+comprobar:
+    mov al, [rdi]
+    cmp al, [rsi]
+    jne siguiente
 
-section .text ;obligatorio iniciar con esto mismo
+    inc rax            ; Incrementa el contador de aciertos
 
-global comprobante_resultados
+siguiente:
+    inc rdi            ; Mueve al siguiente elemento del array
+    inc rsi
+    loop comprobar     ; Decrementa rcx y salta a comprobar si rcx != 0
 
-
-comprobante_resultados:
-    xor rax, rax
-    mov rcx, 0 ;este mismo contador indicara el final de los elementos de la tabla.
-
-verificación:
-    ;aqui es donde compararemos tanto el array de preguntas y el de respuestas, primero inicializando el contador, se va a inicializar en 0 para ir sumando de forma adecuada.
-    mov al, [rdi + rcx] ;almacena respuesta de usuario rdi[rcx] (como si fuese rdi[i o 0 pues])
-    cmp al, [rsi + rcx] ;ahora la comparar con el elemento rsi[rcx] de las respuestas correctas
-    je incremento ;iremos a la linea donde se incrementa el rax
-    inc rcx
-    cmp rcx, 5 ;aqui es donde verificamos si la cadena ha terminado
-    je termino ;saltamos a la parte final 
-    jmp verificación ;saltamos de nueva cuenta al verificador para poder seguir iterando
-
-incremento:
-    inc rax ;aqui aumentamos en 1 el rax
-    inc rcx ;el rcx se aumenta pues porque ocupamos que aumente realmente ya que si no pues nos quedamos que si respondes de forma incorrecta solo ahi avanzara
-    cmp rcx, 5 ;comparamos si ya termino rcx con todo el arreglo
-    je termino
-    jmp verificación
-
-
-termino:
+    ; Mostrar resultado
     cmp rax, 0
-    je cero
+    je mostrar_cero
     cmp rax, 3
-    jae Aprobado
+    jae mostrar_aprobado
     cmp rax, 2
-    jbe Reprobado
+    jbe mostrar_reprobado
 
-;Aquí es donde se envian los resultados
-Aprobado:
-    mov rdi, msg1
-    jmp resultados
+mostrar_aprobado:
+    mov rdi, msg_aprobado
+    call imprimir_mensaje
+    jmp fin
 
-Reprobado:
-    mov rdi, msg2
-    jmp resultados
+mostrar_reprobado:
+    mov rdi, msg_reprobado
+    call imprimir_mensaje
+    jmp fin
 
-cero:
-    mov rdi, msg3
-    jmp resultados
+mostrar_cero:
+    mov rdi, msg_cero
+    call imprimir_mensaje
+    jmp fin
 
-resultados:
-    mov rdi, 0
+imprimir_mensaje:
+    mov rdx, rax  ; Guarda la cantidad de aciertos en rdx
+    mov rsi, rdi  ; rdi ya tiene la dirección del mensaje
+    mov rdi, 1    ; 1 es el descriptor de archivo de stdout
+    mov rax, 1    ; sys_write
     syscall
     ret
 
-
-section .rodata
-    msg1: db 'Aprobado. Aciertos = ', 0
-    msg2: db 'Reprobado. Aciertos = ', 0
-    msg3: db 'Wow. Creo que toca estudiar un poco, tuviste cero aciertos...', 0
+fin:
+    mov rax, 60   ; sys_exit
+    xor rdi, rdi  ; estado de salida 0
+    syscall
